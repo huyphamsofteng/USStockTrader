@@ -25,14 +25,38 @@
                 <h1 class="fs-1">Build your expiremental invest profile</h1>
             </div>
             <div class="col-md-6">
-                <form class="form-inline row" method="post" action="/add" id="add_form">
-                    <div class="form-group mx-sm-3 mb-2 col">
-                        <label for="ticker" class="sr-only fs-4 text-center">Add Symbol</label>
-                        <input type="text" class="form-control" id="ticker" name="ticker" placeholder="E.g: AAPL">
+                <div class="row">
+                    <form class="form-inline" method="post" action="/add" id="add_form">
+                        <div class="row">
+                            <div class="form-group mx-sm-3 mb-2 col">
+                                <div class="row"><label for="ticker" class="sr-only fs-4 text-center">Add Symbol</label>
+                                </div>
+                                <div class="row">
+                                    <div class="col"><input type="text" class="form-control" id="ticker" name="ticker"
+                                            placeholder="E.g: AAPL"></div>
+                                    <div class="col"><input type="text" class="form-control" id="qty" name="qty"
+                                            placeholder="Max 5 "></div>
+                                </div>
+                            </div>
+                            <div class="col d-flex justify-content-center align-items-center">
+                                <div class="row">
+                                    <div class="col"><button type="submit" class="btn btn-primary w-100 h-100">Add to cart</button>
+                                    </div>
+                                    <div class="col"><button class="btn btn-danger w-100 h-100" formaction="/empty">Delete All</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        {{#errors}}
+                        <div class="row alert-danger alert">Error: {{.}}</div>
+                        {{/errors}}
+                        {{^errors}}
+                        {{/errors}}
                     </div>
-                    <button type="submit" class="btn btn-primary m-2 col">Add to cart</button>
-                    <button class="btn btn-danger m-2 col" formaction="/empty">Delete All</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -58,10 +82,10 @@
                                 <td>{{last_date}}</td>
                             </tr>
                             {{/portfolio}}
-                            {{^portfolio}}
-                            <div class="alert alert-primary my-2">You don't have anything to show</div>
-                            {{/portfolio}}
                         </tbody>
+                        {{^portfolio}}
+                        <div class="alert alert-primary my-2">You don't have anything to show</div>
+                        {{/portfolio}}
                     </table>
                 </div>
             </div>

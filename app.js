@@ -18,6 +18,7 @@ app.use(bodyParser.json());
 const stock_list = "AAPL,NVDA,META,GOOG";
 const etf_list = "VOO,QQQ,SWIN,SPY"
 const api_link = `http://api.marketstack.com/v1/eod/latest?access_key=391155620fff54fed932f06f3f574e81&symbols=${stock_list},${etf_list}`;
+const portfolio = [];
 
 app.get("/resources/bg_cover", async (req, res) => {
     const img_path = __dirname + "/resources/bg-cover.jpg";
@@ -64,7 +65,6 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/portfolio", async (req, res) => {
-    const portfolio = [];
     axios.get(`http://localhost:${PORT}/load_portfolio`)
         .then(res => {
             res.data.forEach((item) => {
@@ -84,21 +84,41 @@ app.get("/portfolio", async (req, res) => {
     res.render("portfolio", {
         portfolio: portfolio
     })
+    portfolio.length = 0;
 });
 
 app.post("/add", async (req, res) => {
-    const stock = req.query;
-    console.log(req.body.ticker);
-    res.json(req.body.ticker);
-    axios.get(`http://localhost:${PORT}/portfolio`)
-        .catch(error => {
-            console.log(error);
-            res.status(500).send("Internal Server Error");
-        });
+    const errors = [];
+    const symbol = {};
+    if (!req.body.ticker) {
+        errors.push("The Symbol Must Not Be Empty");
+    }
+    else {
+        if (req.body.ticker.length > 5 || req.body.ticker.length < 1) {
+            errors.push("The Symbol Must Have 1 to 5 Letters");
+        }
+    }
+    if (!req.body.qty) {
+        errors.push("The Quantity Must Not Be Empty");
+    }
+    else {
+        try {
+            symbol.qty = parseInt(req.body.qty);
+            if (req.body.qty.length > 10 || req.body.qty.length < 0) {
+                errors.push("The Quantity Must Be in Range From 1 to 10");
+            }
+        }
+        catch (err) {
+            errors.push("The Quantity Must Be An Integer");
+        }
+    }
+    res.render("portfolio", {
+        portfolio: portfolio,
+        errors: errors
+    })
 });
 
-app.post("/empty", async (req, res) => {
-    const db = new sqlite3.Database('stockdatabase.db');
+app.post("/empty", (req, res) => {
     create_db();
 });
 
@@ -117,6 +137,7 @@ app.get("/load_portfolio", async function (req, res) {
     });
 });
 
+//Function 
 async function create_db(req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
     console.log('Connected to the SQLite database.');
@@ -138,6 +159,11 @@ async function create_db(req, res) {
         db.close();
     }
 };
+
+function test_sql (){
+    const db = new sqlite3.Database("stockdatabase.db");
+    db.run("INSERT INTO stocks VALUES (1,'VOO',1,150,150,'mar 1')")
+}
 
 // Start the Express server
 app.listen(PORT, () => {
