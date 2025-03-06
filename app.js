@@ -82,6 +82,22 @@ app.get("/portfolio", async (req, res) => {
     })
 });
 
+app.post("/add", async (req, res) => {
+    const stock = req.query;
+    console.log(req.body.ticker);
+    res.json(req.body.ticker);
+    axios.get(`http://localhost:${PORT}/portfolio`)
+        .catch(error => {
+            console.log(error);
+            res.status(500).send("Internal Server Error");
+        });
+});
+
+app.post("/empty", async (req, res) => {
+    const db = new sqlite3.Database('stockdatabase.db');
+    create_db();
+});
+
 //SQL API
 app.get("/load_portfolio", async function (req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
