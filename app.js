@@ -11,6 +11,10 @@ const axios = require('axios');
 const sqlite3 = require("sqlite3").verbose();
 const data = require("./latest.json");
 
+const bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
 const stock_list = "AAPL,NVDA,META,GOOG";
 const etf_list = "VOO,QQQ,SWIN,SPY"
 const api_link = `http://api.marketstack.com/v1/eod/latest?access_key=391155620fff54fed932f06f3f574e81&symbols=${stock_list},${etf_list}`;
