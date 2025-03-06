@@ -15,9 +15,7 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-const stock_list = "AAPL,NVDA,META,GOOG";
-const etf_list = "VOO,QQQ,SWIN,SPY"
-const api_link = `http://api.marketstack.com/v1/eod/latest?access_key=391155620fff54fed932f06f3f574e81&symbols=${stock_list},${etf_list}`;
+const api_link = "http://api.marketstack.com/v1/eod/latest?access_key=391155620fff54fed932f06f3f574e81&symbols=";
 const portfolio = [];
 
 app.get("/resources/bg_cover", async (req, res) => {
@@ -32,7 +30,9 @@ app.get("/resources/favicon", async (req, res) => {
 
 app.get("/", async (req, res) => {
     try {
-        //const response = await fetch(api_link);
+        const stock_list = "AAPL,NVDA,META,GOOG";
+        const etf_list = "VOO,QQQ,SWIN,SPY"
+        //const response = await fetch(`${api_link}${stock_list},${etf_list}`);
         //const data = await response.json();
         const stocks = [];
         const etfs = [];
@@ -67,6 +67,7 @@ app.get("/", async (req, res) => {
 app.get("/portfolio", async (req, res) => {
     axios.get(`http://localhost:${PORT}/load_portfolio`)
         .then(res => {
+            portfolio.length = 0;
             res.data.forEach((item) => {
                 portfolio.push({
                     symbol: item.symbol,
@@ -84,12 +85,11 @@ app.get("/portfolio", async (req, res) => {
     res.render("portfolio", {
         portfolio: portfolio
     })
-    portfolio.length = 0;
 });
 
 app.post("/add", async (req, res) => {
+    //Form Validation 
     const errors = [];
-    const symbol = {};
     if (!req.body.ticker) {
         errors.push("The Symbol Must Not Be Empty");
     }
@@ -97,21 +97,49 @@ app.post("/add", async (req, res) => {
         if (req.body.ticker.length > 5 || req.body.ticker.length < 1) {
             errors.push("The Symbol Must Have 1 to 5 Letters");
         }
+        symbol.ticker = req.body.ticker;
     }
     if (!req.body.qty) {
         errors.push("The Quantity Must Not Be Empty");
     }
     else {
-        try {
+        if (!Number.isInteger(req.body.qty)) {
+            errors.push("The Quantity Must Be An Integer");
+        }
+        else {
             symbol.qty = parseInt(req.body.qty);
             if (req.body.qty.length > 10 || req.body.qty.length < 0) {
                 errors.push("The Quantity Must Be in Range From 1 to 10");
             }
         }
-        catch (err) {
-            errors.push("The Quantity Must Be An Integer");
-        }
     }
+
+    //If errors > 0 will not run this
+    if (!err) {
+        const stock = {};
+        axios.get(`${api_link}${symbol.ticker}`)
+            .then(res => {
+                if (!res.data) {
+                    errors.push("Symbol Not Found");
+                }
+                else {
+                    stock.date = res.data.date;
+                    stock.price = res.data.high;
+                    /*axios.post(`http://localhost:${PORT}/add_stock`, {
+                        symbol: symbol.ticker
+                        
+                    })
+                    .catch ( error => {
+                        console.log(error);
+                    });*/
+                }
+            })
+            .catch(err => {
+                errors.push("Error Finding Symbol");
+                console.log(err);
+            });
+    }
+    
     res.render("portfolio", {
         portfolio: portfolio,
         errors: errors
@@ -125,7 +153,6 @@ app.post("/empty", (req, res) => {
 //SQL API
 app.get("/load_portfolio", async function (req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
-    console.log('Connected to the SQLite database.');
     db.all("SELECT * FROM stocks", [], (err, rows) => {
         if (err) {
             console.error("Error fetching API:", err);
@@ -137,10 +164,13 @@ app.get("/load_portfolio", async function (req, res) {
     });
 });
 
+app.get("/add_stock", async function (req, res) {
+    const db = new sqlite3.Database("stockdatabase.db");
+});
+
 //Function 
 async function create_db(req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
-    console.log('Connected to the SQLite database.');
     try {
         db.serialize(function () {
             db.run("DROP TABLE IF EXISTS stocks");
@@ -160,7 +190,7 @@ async function create_db(req, res) {
     }
 };
 
-function test_sql (){
+function test_sql() {
     const db = new sqlite3.Database("stockdatabase.db");
     db.run("INSERT INTO stocks VALUES (1,'VOO',1,150,150,'mar 1')")
 }
