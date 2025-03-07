@@ -15,7 +15,8 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-const api_link = "http://api.marketstack.com/v1/eod/latest?access_key=391155620fff54fed932f06f3f574e81&symbols=";
+const api_link = "https://api.marketstack.com/v1/eod/latest";
+const api_key = "391155620fff54fed932f06f3f574e81";
 const portfolio = [];
 
 app.get("/resources/bg_cover", async (req, res) => {
@@ -65,11 +66,13 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/portfolio", async (req, res) => {
-    axios.get(`http://localhost:${PORT}/load_portfolio`)
+    //Call local api to fetch data from database
+    await axios.get(`http://localhost:${PORT}/load_portfolio`)
         .then(res => {
             portfolio.length = 0;
-            res.data.forEach((item) => {
+            res.data.forEach((item, index) => {
                 portfolio.push({
+                    rowid: (index + 1),
                     symbol: item.symbol,
                     qty: item.qty,
                     one_price: item.one_price,
@@ -84,12 +87,14 @@ app.get("/portfolio", async (req, res) => {
         })
     res.render("portfolio", {
         portfolio: portfolio
-    })
+    });
 });
 
 app.post("/add", async (req, res) => {
     //Form Validation 
     const errors = [];
+    const stock = {};
+    const qty = parseInt(req.body.qty);
     if (!req.body.ticker) {
         errors.push("The Symbol Must Not Be Empty");
     }
@@ -97,57 +102,77 @@ app.post("/add", async (req, res) => {
         if (req.body.ticker.length > 5 || req.body.ticker.length < 1) {
             errors.push("The Symbol Must Have 1 to 5 Letters");
         }
-        symbol.ticker = req.body.ticker;
     }
     if (!req.body.qty) {
         errors.push("The Quantity Must Not Be Empty");
     }
     else {
-        if (!Number.isInteger(req.body.qty)) {
+        if (isNaN(qty)) {
             errors.push("The Quantity Must Be An Integer");
         }
-        else {
-            symbol.qty = parseInt(req.body.qty);
-            if (req.body.qty.length > 10 || req.body.qty.length < 0) {
-                errors.push("The Quantity Must Be in Range From 1 to 10");
+        if (qty > 10 || qty < 0) {
+            errors.push("The Quantity Must Be in Range From 1 to 10");
+        }
+    }
+    //If errors > 0 will not run this
+    if (!errors.length) {
+        /*try {
+            const response = await axios.get(api_link, {
+                params: {
+                    access_key: api_key,
+                    symbols: req.body.ticker
+                }
+            })
+            if (!response.data || Object.keys(response.data).length === 0) {
+                errors.push("Symbol Not Found");
             }
+            else {
+                stock.symbol = response.data.symbol;
+                stock.qty = qty;
+                stock.price = parseFloat(response.data.high);
+                stock.total_price = (parseFloat(response.data.high) * qty);
+                stock.last_date = response.data.date;
+            }
+        }
+        catch (err) {
+            errors.push("Server Error Finding Symbol");
+            console.log(err);
+        }*/
+        
+        stock.symbol = req.body.ticker;
+        stock.qty = qty;
+        stock.price = 100;
+        stock.total_price = parseFloat(100 * qty);
+        stock.last_date = "2025-02-21T00:00:00+0000";
+
+        if (stock.last_date) {
+            await axios.get(`http://localhost:${PORT}/add_stock`, {
+                params: {
+                    symbol: stock.symbol,
+                    qty: stock.qty,
+                    price: stock.price,
+                    total_price: stock.total_price,
+                    last_date: stock.last_date
+                }
+            })
+                .catch(error => {
+                    console.log(error);
+                });
         }
     }
 
-    //If errors > 0 will not run this
-    if (!err) {
-        const stock = {};
-        axios.get(`${api_link}${symbol.ticker}`)
-            .then(res => {
-                if (!res.data) {
-                    errors.push("Symbol Not Found");
-                }
-                else {
-                    stock.date = res.data.date;
-                    stock.price = res.data.high;
-                    /*axios.post(`http://localhost:${PORT}/add_stock`, {
-                        symbol: symbol.ticker
-                        
-                    })
-                    .catch ( error => {
-                        console.log(error);
-                    });*/
-                }
-            })
-            .catch(err => {
-                errors.push("Error Finding Symbol");
-                console.log(err);
-            });
-    }
-    
+    //Render portfolio page
     res.render("portfolio", {
-        portfolio: portfolio,
-        errors: errors
-    })
+        errors: errors,
+        portfolio: portfolio
+    });
 });
 
-app.post("/empty", (req, res) => {
+app.post("/empty", () => {
     create_db();
+    res.render("portfolio", {
+        portfolio: portfolio
+    });
 });
 
 //SQL API
@@ -166,16 +191,22 @@ app.get("/load_portfolio", async function (req, res) {
 
 app.get("/add_stock", async function (req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
+    try {
+        db.run("INSERT INTO stocks VALUES (?,?,?,?,?)", [req.query.symbol, req.query.qty, req.query.price, req.query.total_price, req.query.last_date]);
+    } catch (err) {
+        console.log(err);
+    } finally {
+        db.close();
+    }
 });
 
 //Function 
-async function create_db(req, res) {
+function create_db() {
     const db = new sqlite3.Database("stockdatabase.db");
     try {
         db.serialize(function () {
             db.run("DROP TABLE IF EXISTS stocks");
             db.run(`CREATE TABLE IF NOT EXISTS stocks (
-                id INTEGER PRIMARY KEY,
                 symbol TEXT NOT NULL,
                 qty INTEGER NOT NULL,
                 one_price REAL NOT NULL,
@@ -192,7 +223,7 @@ async function create_db(req, res) {
 
 function test_sql() {
     const db = new sqlite3.Database("stockdatabase.db");
-    db.run("INSERT INTO stocks VALUES (1,'VOO',1,150,150,'mar 1')")
+    db.run("INSERT INTO stocks VALUES ('VOO',1,150,150,'mar 1')")
 }
 
 // Start the Express server

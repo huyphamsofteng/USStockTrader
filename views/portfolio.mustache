@@ -66,6 +66,7 @@
                 <div class="card p-4 shadow">
                     <table class="table">
                         <thead>
+                            <th scope="col">ID</th>
                             <th scope="col">Symbol</th>
                             <th scope="col">Quantity</th>
                             <th scope="col">One Share</th>
@@ -75,6 +76,7 @@
                         <tbody>
                             {{#portfolio}}
                             <tr>
+                                <td>{{rowid}}</td>
                                 <td>{{symbol}}</td>
                                 <td>{{qty}}</td>
                                 <td>{{one_price}}</td>
