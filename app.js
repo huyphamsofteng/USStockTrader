@@ -9,7 +9,6 @@ app.set('views', __dirname + '/views');
 
 const axios = require('axios');
 const sqlite3 = require("sqlite3").verbose();
-const data = require("./latest.json");
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -31,32 +30,24 @@ app.get("/resources/favicon", async (req, res) => {
 
 app.get("/", async (req, res) => {
     try {
-        const stock_list = "AAPL,NVDA,META,GOOG";
-        const etf_list = "VOO,QQQ,SWIN,SPY"
-        //const response = await fetch(`${api_link}${stock_list},${etf_list}`);
         const stocks = [];
-        const etfs = [];
-        data.data.forEach((item) => {
-            if (stock_list.includes(item.symbol)) {
-                stocks.push({
-                    symbol: item.symbol,
-                    price: item.open,
-                    high: item.high,
-                    low: item.low
-                })
+        const response = await axios(api_link, {
+            params: {
+                access_key: api_key,
+                symbols: "AAPL,NVDA,META,GOOG,VOO,QQQ,VTI,SPY"
             }
-            else if (etf_list.includes(item.symbol)) {
-                etfs.push({
-                    symbol: item.symbol,
-                    price: item.open,
-                    high: item.high,
-                    low: item.low
-                })
-            }
+        });
+        response.data.data.forEach(item => {
+            stocks.push({
+                symbol: item.symbol,
+                price: item.open,
+                high: item.high,
+                low: item.low
+            })
         })
         res.render("index", {
-            stocks: stocks,
-            etfs: etfs
+            stocks: stocks.slice(0,-4),
+            etfs: stocks.slice(4)
         });
     } catch (error) {
         console.error("Error fetching API:", error);
