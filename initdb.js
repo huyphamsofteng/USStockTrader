@@ -12,8 +12,14 @@ const main = async () => {
                 one_price REAL NOT NULL,
                 total_price REAL NOT NULL,
                 last_date TEXT NOT NULL)`);
+            db.run(`CREATE TABLE IF NOT EXISTS transactions (
+                symbol TEXT NOT NULL,
+                qty INTEGER NOT NULL,
+                one_price REAL NOT NULL,
+                total_price REAL NOT NULL,
+                last_date TEXT NOT NULL)`);
         });
-        console.log("Created tablet stocks");
+        console.log("Created tablet stocks and transactions");
     } catch (err) {
         console.log(err);
     } finally {

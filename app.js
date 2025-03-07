@@ -46,7 +46,7 @@ app.get("/", async (req, res) => {
             })
         })
         res.render("index", {
-            stocks: stocks.slice(0,-4),
+            stocks: stocks.slice(0, -4),
             etfs: stocks.slice(4)
         });
     } catch (error) {
@@ -154,7 +154,7 @@ app.post("/add", async (req, res) => {
             console.log(err);
         }
         if (stock.symbol) {
-            await axios.get(`http://localhost:${PORT}/add_stock`, {
+            await axios.post(`http://localhost:${PORT}/add_stock`, {
                 params: {
                     symbol: stock.symbol,
                     qty: stock.qty,
@@ -190,10 +190,13 @@ app.get("/load_portfolio", async function (req, res) {
     });
 });
 
-app.get("/add_stock", async function (req, res) {
+app.post("/add_stock", async function (req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
     try {
-        db.run("INSERT INTO stocks (symbol, qty, one_price, total_price, last_date) VALUES (?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET qty = qty + excluded.qty, one_price = excluded.one_price, total_price = total_price + excluded.total_price", [req.query.symbol, req.query.qty, req.query.price, req.query.total_price, req.query.last_date]);
+        db.serialize( () => {
+            db.run("INSERT INTO stocks (symbol, qty, one_price, total_price, last_date) VALUES (?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET qty = qty + excluded.qty, one_price = excluded.one_price, total_price = total_price + excluded.total_price", [req.body.params.symbol, req.body.params.qty, req.body.params.price, req.body.params.total_price, req.body.params.last_date]);
+            db.run("INSERT INTO transactions (symbol, qty, one_price, total_price, last_date) VALUES (?,?,?,?,?)", [req.body.params.symbol, req.body.params.qty, req.body.params.price, req.body.params.total_price, req.body.params.last_date]);
+        })
         res.redirect("/portfolio");
     } catch (err) {
         console.log(err);
@@ -226,6 +229,12 @@ app.post("/empty_stock", async (req, res) => {
                 one_price REAL NOT NULL,
                 total_price REAL NOT NULL,
                 last_date TEXT NOT NULL)`);
+            db.run(`CREATE TABLE IF NOT EXISTS transactions (
+                    symbol TEXT NOT NULL,
+                    qty INTEGER NOT NULL,
+                    one_price REAL NOT NULL,
+                    total_price REAL NOT NULL,
+                    last_date TEXT NOT NULL)`);
         });
         console.log("All clear");
         res.redirect("/portfolio");
@@ -233,6 +242,20 @@ app.post("/empty_stock", async (req, res) => {
         console.log(err);
     } finally {
         db.close();
+    }
+});
+
+app.get("/history", async (req, res) => {
+    const db = new sqlite3.Database("stockdatabase.db");
+    try {
+        const transactions = db.all("SELECT * FROM transactions");
+        res.render("history", {
+            transactions: transactions
+        });
+    }
+    catch  (err) {
+        console.error("Error fetching API:", err);
+        res.status(500).send("Internal Server Error");
     }
 });
 
