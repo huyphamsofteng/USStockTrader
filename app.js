@@ -89,7 +89,7 @@ app.get("/portfolio", async (req, res) => {
         portfolio.forEach(async (item, index) => {
             if (index != 0) search_symbols = search_symbols.concat(",", item.symbol);
         });
-        /*const response = await axios.get(api_link, {
+        const response = await axios.get(api_link, {
             params: {
                 access_key: api_key,
                 symbols: search_symbols
@@ -99,20 +99,20 @@ app.get("/portfolio", async (req, res) => {
             res.status(500).send("Internal Server Error");
         }
         else {
-            for (let i = 0; i < response.data.data.length; i++){
-                portfolio[i].gain = (parseFloat(response.data.data[i].high)*portfolio[i].qty - portfolio[i].total_price).toFixed(2);
+            for (let i = 0; i < response.data.data.length; i++) {
+                portfolio[i].gain = (parseFloat(response.data.data[i].high) * portfolio[i].qty - portfolio[i].total_price).toFixed(2);
                 portfolio[i].class_gain = (portfolio[i].gain > 0) ? "alert-success" : "alert-danger";
-            }   */
+            }
         }
         for (let i = 0; i < portfolio.length; i++) {
-            //portfolio[i].gain = ((portfolio[i].total_price - parseFloat(response.data.data[i].high) * portfolio[i].qty)).toFixed(2);
-            portfolio[i].gain = (200 * portfolio[i].qty - portfolio[i].total_price).toFixed(2);
+            portfolio[i].gain = ((portfolio[i].total_price - parseFloat(response.data.data[i].high) * portfolio[i].qty)).toFixed(2);
             portfolio[i].class_gain = (portfolio[i].gain > 0) ? "alert-success" : "alert-danger";
         }
-        res.render("portfolio", {
-            portfolio: portfolio
-        });
+    }
+    res.render("portfolio", {
+        portfolio: portfolio
     });
+});
 
 app.post("/add", async (req, res) => {
     //Form Validation 
@@ -173,26 +173,16 @@ app.post("/add", async (req, res) => {
                 }
             })
                 .catch(error => {
+                    res.status(500).send("Internal Server Error");
                     console.log(error);
                 });
         }
     }
-
     //Render portfolio page
     res.render("portfolio", {
         errors: errors,
         portfolio: portfolio
     });
-});
-
-app.post("/delete/:id", async (req, res) => {
-    console.log(req.params.id);
-    res.redirect("/portfolio");
-});
-
-app.post("/empty", async (req, res) => {
-    create_db();
-    res.redirect("/portfolio");
 });
 
 //SQL API
@@ -221,8 +211,20 @@ app.get("/add_stock", async function (req, res) {
     }
 });
 
-//Function 
-function create_db() {
+app.post("/delete_stock/:symbol", async (req, res) => {
+    const db = new sqlite3.Database("stockdatabase.db");
+    db.all("DELETE FROM stocks WHERE symbol = (?)", [req.params.symbol], (err) => {
+        if (err) {
+            console.error("Error fetching API:", err);
+            res.status(500).send("Internal Server Error");
+        } else {
+            db.close();
+        }
+    });
+    res.redirect("/portfolio");
+});
+
+app.post("/empty_stock", async (req, res) => {
     const db = new sqlite3.Database("stockdatabase.db");
     try {
         db.serialize(function () {
@@ -241,15 +243,9 @@ function create_db() {
     } finally {
         db.close();
     }
-};
+});
 
 // Start the Express server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-function test() {
-    const db = new sqlite3.Database("stockdatabase.db");
-    db.run("UPDATE stocks SET total_price = (?) WHERE symbol = 'VOO'", [100])
-}
-//test();

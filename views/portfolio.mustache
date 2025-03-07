@@ -44,7 +44,7 @@
                                             cart</button>
                                     </div>
                                     <div class="col"><button class="btn btn-danger w-100 h-100"
-                                            formaction="/empty">Delete All</button></div>
+                                            formaction="/empty_stock">Delete All</button></div>
                                 </div>
                             </div>
                         </div>
@@ -78,7 +78,6 @@
                             <th scope="col"></th>
                         </thead>
                         <tbody>
-                            <form action="/delete" method="post">
                                 {{#portfolio}}
                                 <tr>
                                     <td>{{rowid}}</td>
@@ -90,10 +89,9 @@
                                         <div class="alert {{{class_gain}}}">{{gain}}</div>
                                     </td>
                                     <td>{{last_date}}</td>
-                                    <td><button class="alert alert-info" href="/delete/{{rowid}}">Delete</button></td>
+                                    <td><form action="/delete_stock/{{symbol}}" method="post"><button class="alert alert-info" type="submit">Delete</button></form></td>
                                 </tr>
                                 {{/portfolio}}
-                            </form>
                         </tbody>
                         {{^portfolio}}
                         <div class="alert alert-primary my-2">You don't have anything to show</div>
