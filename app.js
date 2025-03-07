@@ -34,7 +34,6 @@ app.get("/", async (req, res) => {
         const stock_list = "AAPL,NVDA,META,GOOG";
         const etf_list = "VOO,QQQ,SWIN,SPY"
         //const response = await fetch(`${api_link}${stock_list},${etf_list}`);
-        //const data = await response.json();
         const stocks = [];
         const etfs = [];
         data.data.forEach((item) => {
@@ -85,10 +84,35 @@ app.get("/portfolio", async (req, res) => {
             console.error("Error fetching API:", error);
             res.status(500).send("Internal Server Error");
         })
-    res.render("portfolio", {
-        portfolio: portfolio
+    if (portfolio.length > 0) {
+        let search_symbols = portfolio[0].symbol;
+        portfolio.forEach(async (item, index) => {
+            if (index != 0) search_symbols = search_symbols.concat(",", item.symbol);
+        });
+        /*const response = await axios.get(api_link, {
+            params: {
+                access_key: api_key,
+                symbols: search_symbols
+            }
+        })
+        if (!response.data || Object.keys(response.data).length === 0) {
+            res.status(500).send("Internal Server Error");
+        }
+        else {
+            for (let i = 0; i < response.data.data.length; i++){
+                portfolio[i].gain = (parseFloat(response.data.data[i].high)*portfolio[i].qty - portfolio[i].total_price).toFixed(2);
+                portfolio[i].class_gain = (portfolio[i].gain > 0) ? "alert-success" : "alert-danger";
+            }   */
+        }
+        for (let i = 0; i < portfolio.length; i++) {
+            //portfolio[i].gain = ((portfolio[i].total_price - parseFloat(response.data.data[i].high) * portfolio[i].qty)).toFixed(2);
+            portfolio[i].gain = (200 * portfolio[i].qty - portfolio[i].total_price).toFixed(2);
+            portfolio[i].class_gain = (portfolio[i].gain > 0) ? "alert-success" : "alert-danger";
+        }
+        res.render("portfolio", {
+            portfolio: portfolio
+        });
     });
-});
 
 app.post("/add", async (req, res) => {
     //Form Validation 
@@ -110,13 +134,13 @@ app.post("/add", async (req, res) => {
         if (isNaN(qty)) {
             errors.push("The Quantity Must Be An Integer");
         }
-        if (qty > 10 || qty < 0) {
-            errors.push("The Quantity Must Be in Range From 1 to 10");
+        if (qty > 5 || qty < 0) {
+            errors.push("The Quantity Must Be in Range From 1 to 5");
         }
     }
     //If errors > 0 will not run this
     if (!errors.length) {
-        /*try {
+        try {
             const response = await axios.get(api_link, {
                 params: {
                     access_key: api_key,
@@ -127,25 +151,18 @@ app.post("/add", async (req, res) => {
                 errors.push("Symbol Not Found");
             }
             else {
-                stock.symbol = response.data.symbol;
+                stock.symbol = response.data.data[0].symbol;
                 stock.qty = qty;
-                stock.price = parseFloat(response.data.high);
-                stock.total_price = (parseFloat(response.data.high) * qty);
-                stock.last_date = response.data.date;
+                stock.price = (parseFloat(response.data.data[0].high).toFixed(2));
+                stock.total_price = (parseFloat(response.data.data[0].high) * qty).toFixed(2);
+                stock.last_date = response.data.data[0].date;
             }
         }
         catch (err) {
             errors.push("Server Error Finding Symbol");
             console.log(err);
-        }*/
-        
-        stock.symbol = req.body.ticker;
-        stock.qty = qty;
-        stock.price = 100;
-        stock.total_price = parseFloat(100 * qty);
-        stock.last_date = "2025-02-21T00:00:00+0000";
-
-        if (stock.last_date) {
+        }
+        if (stock.symbol) {
             await axios.get(`http://localhost:${PORT}/add_stock`, {
                 params: {
                     symbol: stock.symbol,
@@ -168,11 +185,14 @@ app.post("/add", async (req, res) => {
     });
 });
 
-app.post("/empty", () => {
+app.post("/delete/:id", async (req, res) => {
+    console.log(req.params.id);
+    res.redirect("/portfolio");
+});
+
+app.post("/empty", async (req, res) => {
     create_db();
-    res.render("portfolio", {
-        portfolio: portfolio
-    });
+    res.redirect("/portfolio");
 });
 
 //SQL API
@@ -192,7 +212,8 @@ app.get("/load_portfolio", async function (req, res) {
 app.get("/add_stock", async function (req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
     try {
-        db.run("INSERT INTO stocks VALUES (?,?,?,?,?)", [req.query.symbol, req.query.qty, req.query.price, req.query.total_price, req.query.last_date]);
+        db.run("INSERT INTO stocks (symbol, qty, one_price, total_price, last_date) VALUES (?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET qty = qty + excluded.qty, one_price = excluded.one_price, total_price = total_price + excluded.total_price", [req.query.symbol, req.query.qty, req.query.price, req.query.total_price, req.query.last_date]);
+        res.redirect("/portfolio");
     } catch (err) {
         console.log(err);
     } finally {
@@ -207,13 +228,14 @@ function create_db() {
         db.serialize(function () {
             db.run("DROP TABLE IF EXISTS stocks");
             db.run(`CREATE TABLE IF NOT EXISTS stocks (
-                symbol TEXT NOT NULL,
+                symbol TEXT PRIMARY KEY,
                 qty INTEGER NOT NULL,
                 one_price REAL NOT NULL,
                 total_price REAL NOT NULL,
                 last_date TEXT NOT NULL)`);
         });
         console.log("All clear");
+        res.redirect("/portfolio");
     } catch (err) {
         console.log(err);
     } finally {
@@ -221,12 +243,13 @@ function create_db() {
     }
 };
 
-function test_sql() {
-    const db = new sqlite3.Database("stockdatabase.db");
-    db.run("INSERT INTO stocks VALUES ('VOO',1,150,150,'mar 1')")
-}
-
 // Start the Express server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+function test() {
+    const db = new sqlite3.Database("stockdatabase.db");
+    db.run("UPDATE stocks SET total_price = (?) WHERE symbol = 'VOO'", [100])
+}
+//test();

@@ -40,9 +40,11 @@
                             </div>
                             <div class="col d-flex justify-content-center align-items-center">
                                 <div class="row">
-                                    <div class="col"><button type="submit" class="btn btn-primary w-100 h-100">Add to cart</button>
+                                    <div class="col"><button type="submit" class="btn btn-primary w-100 h-100">Add to
+                                            cart</button>
                                     </div>
-                                    <div class="col"><button class="btn btn-danger w-100 h-100" formaction="/empty">Delete All</button></div>
+                                    <div class="col"><button class="btn btn-danger w-100 h-100"
+                                            formaction="/empty">Delete All</button></div>
                                 </div>
                             </div>
                         </div>
@@ -71,19 +73,27 @@
                             <th scope="col">Quantity</th>
                             <th scope="col">One Share</th>
                             <th scope="col">Total Price</th>
+                            <th scope="col">Gain/Loss</th>
                             <th scope="col">Date of Last Purchase</th>
+                            <th scope="col"></th>
                         </thead>
                         <tbody>
-                            {{#portfolio}}
-                            <tr>
-                                <td>{{rowid}}</td>
-                                <td>{{symbol}}</td>
-                                <td>{{qty}}</td>
-                                <td>{{one_price}}</td>
-                                <td>{{total_price}}</td>
-                                <td>{{last_date}}</td>
-                            </tr>
-                            {{/portfolio}}
+                            <form action="/delete" method="post">
+                                {{#portfolio}}
+                                <tr>
+                                    <td>{{rowid}}</td>
+                                    <td>{{symbol}}</td>
+                                    <td>{{qty}}</td>
+                                    <td>{{one_price}}</td>
+                                    <td>{{total_price}}</td>
+                                    <td>
+                                        <div class="alert {{{class_gain}}}">{{gain}}</div>
+                                    </td>
+                                    <td>{{last_date}}</td>
+                                    <td><button class="alert alert-info" href="/delete/{{rowid}}">Delete</button></td>
+                                </tr>
+                                {{/portfolio}}
+                            </form>
                         </tbody>
                         {{^portfolio}}
                         <div class="alert alert-primary my-2">You don't have anything to show</div>

@@ -7,7 +7,7 @@ const main = async () => {
         db.serialize(function () {
             db.run("DROP TABLE IF EXISTS stocks");
             db.run(`CREATE TABLE IF NOT EXISTS stocks (
-                symbol TEXT NOT NULL,
+                symbol TEXT PRIMARY KEY,
                 qty INTEGER NOT NULL,
                 one_price REAL NOT NULL,
                 total_price REAL NOT NULL,
