@@ -6,6 +6,7 @@ const main = async () => {
         console.log('Connected to the SQLite database.');
         db.serialize(function () {
             db.run("DROP TABLE IF EXISTS stocks");
+            db.run("DROP TABLE IF EXISTS transactions");
             db.run(`CREATE TABLE IF NOT EXISTS stocks (
                 symbol TEXT PRIMARY KEY,
                 qty INTEGER NOT NULL,

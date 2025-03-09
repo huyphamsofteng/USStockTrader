@@ -15,68 +15,84 @@
     </style>
 </head>
 
-<body>
-{{> header }}
+<body class="bg-light">
+{{>header}}
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-6 d-flex justify-content-end"><img src="/resources/bg_cover" alt="Stock Pic" class="img-fluid img-cover"></div>
-            <div class="col-md-6 d-flex flex-column justify-content-center">
-                <div class="row"><h1 class="fs-1">Invest to the future</h1></div>
-                <div class="row"><h2 class="fs-2">Current price of the most trending stocks from US</h2></div>
+        <div class="row align-items-center">
+            <div class="col-lg-6 col-md-12 text-center">
+                <img src="/resources/bg_cover" alt="Stock Pic" class="img-fluid img-cover">
+            </div>
+            <div class="col-lg-6 col-md-12 text-center text-md-start p-4">
+                <h1 class="fs-1 fw-bold">Invest in the Future</h1>
+                <h2 class="fs-4 text-muted">Current prices of the most trending US stocks</h2>
             </div>
         </div>
     </div>
-    <div class="container-fluid text-center mt-5">
+    <div class="container mt-5">
         <div class="row">
-            <div class="col-md-6">
-                <div class="card p-4 shadow">
-                    <h2>Trending Tickers</h2>
-                    <table class="table">
-                        <thead>
-                            <th scope="col">Symbol</th>
-                            <th scope="col">Price</th>
-                            <th scope="col">High</th>
-                            <th scope="col">Low</th>
-                        </thead>
-                        <tbody>
-                        {{#stocks}}
-                            <tr>
-                                <td>{{symbol}}</td>
-                                <td>{{price}}</td>
-                                <td>{{high}}</td>
-                                <td>{{low}}</td>
-                            </tr>
+            <!-- Trending Tickers Table -->
+            <div class="col-lg-6 col-md-12 mb-4">
+                <div class="card p-4 shadow-lg">
+                    <h2 class="text-center">Trending Tickers</h2>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Symbol</th>
+                                    <th scope="col">Price</th>
+                                    <th scope="col">High</th>
+                                    <th scope="col">Low</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#stocks}}
+                                <tr>
+                                    <td>{{symbol}}</td>
+                                    <td>${{price}}</td>
+                                    <td>${{high}}</td>
+                                    <td>${{low}}</td>
+                                </tr>
+                                {{/stocks}}
+                            </tbody>
+                        </table>
+                        {{^stocks}}
+                        <div class="alert alert-warning text-center mt-3">No trending stocks available.</div>
                         {{/stocks}}
-                        </tbody>
-                    </table>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card p-4 shadow">
-                    <h2>ETFs</h2>
-                    <table class="table">
-                        <thead>
-                            <th scope="col">Symbol</th>
-                            <th scope="col">Price</th>
-                            <th scope="col">High</th>
-                            <th scope="col">Low</th>
-                        </thead>
-                        <tbody>
-                        {{#etfs}}
-                            <tr>
-                                <td>{{symbol}}</td>
-                                <td>{{price}}</td>
-                                <td>{{high}}</td>
-                                <td>{{low}}</td>
-                            </tr>
+            <div class="col-lg-6 col-md-12">
+                <div class="card p-4 shadow-lg">
+                    <h2 class="text-center">ETFs</h2>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover text-center">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th scope="col">Symbol</th>
+                                    <th scope="col">Price</th>
+                                    <th scope="col">High</th>
+                                    <th scope="col">Low</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#etfs}}
+                                <tr>
+                                    <td>{{symbol}}</td>
+                                    <td>${{price}}</td>
+                                    <td>${{high}}</td>
+                                    <td>${{low}}</td>
+                                </tr>
+                                {{/etfs}}
+                            </tbody>
+                        </table>
+                        {{^etfs}}
+                        <div class="alert alert-warning text-center mt-3">No ETF data available.</div>
                         {{/etfs}}
-                        </tbody>
-                    </table>
+                    </div>
                 </div>
             </div>
         </div>
-</body>
-
+    </div>
 {{> footer }}
-
+</body>
 </html>

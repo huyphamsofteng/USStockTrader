@@ -49,9 +49,11 @@ app.get("/", async (req, res) => {
             stocks: stocks.slice(0, -4),
             etfs: stocks.slice(4)
         });
-    } catch (error) {
-        console.error("Error fetching API:", error);
-        res.status(500).send("Internal Server Error");
+    } catch (err) {
+        res.render("error",
+            {error: "External Server Error / Cannot Get Price From API"}
+        );
+        console.log(err);
     }
 });
 
@@ -71,9 +73,11 @@ app.get("/portfolio", async (req, res) => {
                 })
             })
         })
-        .catch(error => {
-            console.error("Error fetching API:", error);
-            res.status(500).send("Internal Server Error");
+        .catch(err => {
+            res.render("error",
+                {error: "External Server Error / Cannot Get Price From API"}
+            );
+            console.log(err);
         })
     if (portfolio.length > 0) {
         let search_symbols = portfolio[0].symbol;
@@ -87,7 +91,9 @@ app.get("/portfolio", async (req, res) => {
             }
         })
         if (!response.data || Object.keys(response.data).length === 0) {
-            res.status(500).send("Internal Server Error");
+            res.render("error",
+                {error: "External Server Error / Cannot Get Price From API"}
+            );
         }
         else {
             for (let i = 0; i < response.data.data.length; i++) {
@@ -150,7 +156,9 @@ app.post("/add", async (req, res) => {
             }
         }
         catch (err) {
-            errors.push("Server Error Finding Symbol");
+            res.render("error",
+                {error: "External Server Error / Cannot Get Price From API"}
+            );
             console.log(err);
         }
         if (stock.symbol) {
@@ -163,9 +171,11 @@ app.post("/add", async (req, res) => {
                     last_date: stock.last_date
                 }
             })
-                .catch(error => {
-                    res.status(500).send("Internal Server Error");
-                    console.log(error);
+                .catch(err => {
+                    res.render("error",
+                        {error: "SQL Server Error"}
+                    );
+                    console.log(err);
                 });
         }
     }
@@ -181,8 +191,10 @@ app.get("/load_portfolio", async function (req, res) {
     const db = new sqlite3.Database("stockdatabase.db");
     db.all("SELECT * FROM stocks", [], (err, rows) => {
         if (err) {
-            console.error("Error fetching API:", err);
-            res.status(500).send("Internal Server Error");
+            res.render("error",
+                {error: "SQL Server Error"}
+            );
+            console.log(err);
         } else {
             res.json(rows);
             db.close();
@@ -199,6 +211,9 @@ app.post("/add_stock", async function (req, res) {
         })
         res.redirect("/portfolio");
     } catch (err) {
+        res.render("error",
+            {error: "SQL Server Error"}
+        );
         console.log(err);
     } finally {
         db.close();
@@ -209,8 +224,10 @@ app.post("/delete_stock/:symbol", async (req, res) => {
     const db = new sqlite3.Database("stockdatabase.db");
     db.all("DELETE FROM stocks WHERE symbol = (?)", [req.params.symbol], (err) => {
         if (err) {
-            console.error("Error fetching API:", err);
-            res.status(500).send("Internal Server Error");
+            res.render("error",
+                {error: "SQL Server Error"}
+            );
+            console.log(err);
         } else {
             db.close();
         }
@@ -223,6 +240,7 @@ app.post("/empty_stock", async (req, res) => {
     try {
         db.serialize(function () {
             db.run("DROP TABLE IF EXISTS stocks");
+            db.run("DROP TABLE IF EXISTS transactions");
             db.run(`CREATE TABLE IF NOT EXISTS stocks (
                 symbol TEXT PRIMARY KEY,
                 qty INTEGER NOT NULL,
@@ -239,6 +257,9 @@ app.post("/empty_stock", async (req, res) => {
         console.log("All clear");
         res.redirect("/portfolio");
     } catch (err) {
+        res.render("error",
+            {error: "SQL Server Error"}
+        );
         console.log(err);
     } finally {
         db.close();
@@ -248,14 +269,17 @@ app.post("/empty_stock", async (req, res) => {
 app.get("/history", async (req, res) => {
     const db = new sqlite3.Database("stockdatabase.db");
     try {
-        const transactions = db.all("SELECT * FROM transactions");
-        res.render("history", {
-            transactions: transactions
+        db.all("SELECT * FROM transactions", (err,rows) => {
+            res.render("history", {
+                transactions: rows
+            });
         });
     }
     catch  (err) {
-        console.error("Error fetching API:", err);
-        res.status(500).send("Internal Server Error");
+        res.render("error",
+            {error: "SQL Server Error"}
+        );
+        console.log(err);
     }
 });
 
