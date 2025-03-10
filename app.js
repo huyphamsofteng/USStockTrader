@@ -128,7 +128,7 @@ app.post("/add", async (req, res) => {
         errors.push("The Quantity Must Not Be Empty");
     }
     else {
-        if (isNaN(qty)) {
+        if (!Number.isInteger(qty)) {
             errors.push("The Quantity Must Be An Integer");
         }
         if (qty > 5 || qty < 0) {
